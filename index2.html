@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Home · Blynk Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --r1: #ff6ec7;
+    --r2: #ff9d3f;
+    --r3: #ffe135;
+    --r4: #5aff8a;
+    --r5: #3fc9ff;
+    --r6: #a855f7;
+    --glass: rgba(255,255,255,0.60);
+    --glass-border: rgba(255,255,255,0.80);
+    --text-dark: #1a0033;
+    --text-mid: #4a006e;
+    --text-light: #7e22ce;
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+
+  html, body {
+    min-height: 100%;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  body {
+    background: linear-gradient(135deg, #ff6ec7 0%, #ff9d3f 18%, #ffe135 36%, #5aff8a 54%, #3fc9ff 72%, #a855f7 100%);
+    background-size: 400% 400%;
+    animation: rainbowShift 10s ease infinite;
+    min-height: 100vh;
+    padding: 0 0 48px;
+  }
+
+  @keyframes rainbowShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    background: rgba(255,255,255,0.28);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1.5px solid rgba(255,255,255,0.50);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-emoji { font-size: 36px; }
+
+  .header-info { flex: 1; }
+  .header-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-dark);
+    letter-spacing: -0.5px;
+  }
+  .header-sub { font-size: 13px; color: var(--text-mid); margin-top: 2px; }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,0.50);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 40px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
+  }
+
+  .dot-live {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse 1.6s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.85);} }
+
+  .refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.55);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .refresh-btn:hover { background: rgba(255,255,255,0.80); transform: translateY(-1px); }
+  .refresh-btn:active { transform: scale(0.97); }
+  .refresh-btn i { font-size: 17px; }
+  .refresh-btn.spinning i { animation: spin 0.75s linear infinite; }
+  @keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+  /* ─── LAYOUT ─── */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 28px 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* ─── NOTICE ─── */
+  .notice {
+    background: rgba(255,255,255,0.55);
+    border: 1.5px solid rgba(255,200,50,0.60);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .notice i { font-size: 20px; color: #d97706; }
+
+  /* ─── SECTIONS ─── */
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 14px;
+  }
+  .section-head i { font-size: 18px; color: var(--text-light); }
+
+  /* ─── CARD BASE ─── */
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    transition: transform 0.18s, box-shadow 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(100,0,150,0.13); }
+
+  .card-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-mid);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-label i { font-size: 17px; }
+
+  /* ─── GRIDS ─── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  @media (max-width: 680px) {
+    .grid4 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .grid2, .grid4 { grid-template-columns: 1fr; }
+    .header { padding: 14px 18px; }
+    .header-title { font-size: 19px; }
+    .container { padding: 18px 14px 0; }
+  }
+
+  /* ─── TOGGLE SWITCH ─── */
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .sw-label-val { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+
+  .toggle {
+    position: relative;
+    width: 62px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: background 0.3s;
+    border: 1.5px solid rgba(0,0,0,0.10);
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: white;
+    top: 3px; left: 3px;
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+  }
+  .toggle input:checked + .toggle-track {
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    border-color: transparent;
+  }
+  .toggle input:checked + .toggle-track::after { transform: translateX(30px); }
+
+  /* ─── LED STATUS ─── */
+  .led-row { display: flex; align-items: center; gap: 12px; }
+  .led-orb {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.12);
+    border: 2px solid rgba(0,0,0,0.08);
+    transition: all 0.35s;
+    flex-shrink: 0;
+  }
+  .led-orb.active-green {
+    background: radial-gradient(circle at 35% 30%, #bbf7d0, #16a34a 70%);
+    box-shadow: 0 0 0 4px rgba(22,163,74,0.20), 0 0 14px rgba(22,163,74,0.45);
+    border-color: #16a34a;
+  }
+  .led-orb.active-red {
+    background: radial-gradient(circle at 35% 30%, #fecaca, #dc2626 70%);
+    box-shadow: 0 0 0 4px rgba(220,38,38,0.20), 0 0 14px rgba(220,38,38,0.40);
+    border-color: #dc2626;
+  }
+  .led-status-txt { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+
+  /* ─── FAN SPEED ─── */
+  .fan-body { display: flex; align-items: center; gap: 14px; }
+  .fan-anim { font-size: 38px; flex-shrink: 0; transition: all 0.3s; user-select: none; }
+  .fan-anim.spin-1 { animation: fanSpin 2.8s linear infinite; }
+  .fan-anim.spin-2 { animation: fanSpin 1.2s linear infinite; }
+  .fan-anim.spin-3 { animation: fanSpin 0.5s linear infinite; }
+  @keyframes fanSpin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+  .fan-controls { flex: 1; }
+  .fan-cur-speed { font-size: 12px; color: var(--text-light); font-weight: 600; margin-bottom: 8px; }
+  .fan-cur-speed strong { color: var(--text-dark); font-size: 14px; }
+
+  .speed-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .spd-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1.5px solid #c084fc;
+    background: rgba(192,132,252,0.12);
+    color: #6b21a8;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .spd-btn:hover { background: rgba(192,132,252,0.30); }
+  .spd-btn:active { transform: scale(0.95); }
+  .spd-btn.active {
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 10px rgba(168,85,247,0.40);
+  }
+
+  /* ─── TEMPERATURE GAUGE ─── */
+  .temp-display { text-align: center; margin-bottom: 14px; }
+  .temp-val { font-size: 52px; font-weight: 900; color: var(--text-dark); line-height: 1; }
+  .temp-unit { font-size: 20px; color: var(--text-light); font-weight: 700; }
+
+  .gauge-track {
+    height: 14px;
+    border-radius: 7px;
+    background: rgba(0,0,0,0.10);
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .gauge-fill {
+    height: 100%;
+    border-radius: 7px;
+    background: linear-gradient(90deg, #3fc9ff, #5aff8a, #ffe135, #ff9d3f, #ff4444);
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .temp-set-label { font-size: 13px; font-weight: 700; color: var(--text-mid); margin-bottom: 8px; }
+  .temp-set-row { display: flex; align-items: center; gap: 12px; }
+
+  .range-wrap { flex: 1; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: 2.5px solid #a855f7;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(168,85,247,0.35);
+    transition: transform 0.15s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: 2.5px solid #a855f7;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-dark);
+    min-width: 52px;
+    text-align: right;
+  }
+
+  .send-btn {
+    padding: 9px 20px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 3px 12px rgba(168,85,247,0.35);
+    white-space: nowrap;
+  }
+  .send-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(168,85,247,0.45); }
+  .send-btn:active { transform: scale(0.97); }
+
+  /* ─── DISABLED LOCK ─── */
+  .card.locked {
+    opacity: 0.58;
+    pointer-events: none;
+  }
+  .card.locked::after {
+    content: '🔒 เปิด SW ก่อน';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-light);
+    border-radius: var(--radius);
+    backdrop-filter: blur(2px);
+  }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: rgba(30,0,60,0.92);
+    color: white;
+    padding: 10px 22px;
+    border-radius: 40px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.3s;
+    opacity: 0;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ─── DECORATIVE BUBBLES ─── */
+  .bubble {
+    position: fixed;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    pointer-events: none;
+    z-index: 0;
+    animation: floatBubble linear infinite;
+  }
+  @keyframes floatBubble {
+    0%   { transform: translateY(0) scale(1); opacity: 0.6; }
+    100% { transform: translateY(-110vh) scale(1.2); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Decorative bubbles -->
+<div class="bubble" style="width:80px;height:80px;left:5%;bottom:-80px;animation-duration:12s;animation-delay:0s;"></div>
+<div class="bubble" style="width:50px;height:50px;left:25%;bottom:-80px;animation-duration:16s;animation-delay:3s;"></div>
+<div class="bubble" style="width:110px;height:110px;left:60%;bottom:-80px;animation-duration:10s;animation-delay:1s;"></div>
+<div class="bubble" style="width:40px;height:40px;left:80%;bottom:-80px;animation-duration:14s;animation-delay:5s;"></div>
+<div class="bubble" style="width:70px;height:70px;left:45%;bottom:-80px;animation-duration:18s;animation-delay:7s;"></div>
+
+<header class="header">
+  <span class="header-emoji" aria-hidden="true">🏠</span>
+  <div class="header-info">
+    <div class="header-title">Smart Home Dashboard</div>
+    <div class="header-sub">Blynk Cloud · IoT Controller</div>
+  </div>
+  <div class="status-pill">
+    <span class="dot-live" id="dot"></span>
+    <span id="statusText">กำลังโหลด...</span>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()" aria-label="รีเฟรชข้อมูล">
+    <i class="ti ti-refresh" aria-hidden="true"></i> รีเฟรช
+  </button>
+</header>
+
+<main class="container" role="main">
+  <h1 class="sr-only">Smart Home Dashboard ควบคุมผ่าน Blynk Cloud</h1>
+
+  <div class="notice" role="status">
+    <i class="ti ti-info-circle" aria-hidden="true"></i>
+    <span>กรุณา <strong>เปิดสวิตช์ (SW) ก่อน</strong> เพื่อให้อุปกรณ์แต่ละชุดทำงานได้</span>
+  </div>
+
+  <!-- ──── SW SECTION ──── -->
+  <section aria-labelledby="sw-heading">
+    <div class="section-head" id="sw-heading">
+      <i class="ti ti-toggle-right" aria-hidden="true"></i> สวิตช์ควบคุม (SW)
+    </div>
+    <div class="grid2">
+      <div class="card" id="card-sw-0">
+        <div class="card-label"><i class="ti ti-bulb" aria-hidden="true"></i>💡 ไฟห้อง</div>
+        <div class="switch-row">
+          <span class="sw-label-val" id="lbl-sw-0">ปิด ⭕</span>
+          <label class="toggle" aria-label="Toggle ไฟห้อง">
+            <input type="checkbox" id="sw-0" onchange="handleSW(0)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+      <div class="card" id="card-sw-1">
+        <div class="card-label"><i class="ti ti-wind" aria-hidden="true"></i>🌀 ไฟพัดลม</div>
+        <div class="switch-row">
+          <span class="sw-label-val" id="lbl-sw-1">ปิด ⭕</span>
+          <label class="toggle" aria-label="Toggle ไฟพัดลม">
+            <input type="checkbox" id="sw-1" onchange="handleSW(1)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+      <div class="card" id="card-sw-2">
+        <div class="card-label"><i class="ti ti-wind" aria-hidden="true"></i>🌀 ไฟพัดลม 2</div>
+        <div class="switch-row">
+          <span class="sw-label-val" id="lbl-sw-2">ปิด ⭕</span>
+          <label class="toggle" aria-label="Toggle ไฟพัดลม 2">
+            <input type="checkbox" id="sw-2" onchange="handleSW(2)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+      <div class="card" id="card-sw-7">
+        <div class="card-label"><i class="ti ti-thermometer" aria-hidden="true"></i>🌡️ ไฟค่าอุณหภูมิ</div>
+        <div class="switch-row">
+          <span class="sw-label-val" id="lbl-sw-7">ปิด ⭕</span>
+          <label class="toggle" aria-label="Toggle ไฟค่าอุณหภูมิ">
+            <input type="checkbox" id="sw-7" onchange="handleSW(7)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──── LED STATUS SECTION ──── -->
+  <section aria-labelledby="led-heading">
+    <div class="section-head" id="led-heading">
+      <i class="ti ti-circle-dot" aria-hidden="true"></i> สถานะการทำงาน (LED)
+    </div>
+    <div class="grid4">
+      <div class="card">
+        <div class="card-label">💡 สถานะไฟห้อง</div>
+        <div class="led-row">
+          <div class="led-orb" id="led3" aria-label="LED สถานะไฟห้อง"></div>
+          <span class="led-status-txt" id="led3-txt">--</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">🌀 สถานะพัดลม</div>
+        <div class="led-row">
+          <div class="led-orb" id="led4" aria-label="LED สถานะพัดลม"></div>
+          <span class="led-status-txt" id="led4-txt">--</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">🌀 สถานะพัดลม 2</div>
+        <div class="led-row">
+          <div class="led-orb" id="led5" aria-label="LED สถานะพัดลม 2"></div>
+          <span class="led-status-txt" id="led5-txt">--</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">🌡️ สถานะอุณหภูมิ</div>
+        <div class="led-row">
+          <div class="led-orb" id="led6" aria-label="LED สถานะอุณหภูมิ"></div>
+          <span class="led-status-txt" id="led6-txt">--</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──── FAN SPEED SECTION ──── -->
+  <section aria-labelledby="fan-heading">
+    <div class="section-head" id="fan-heading">
+      <i class="ti ti-wind" aria-hidden="true"></i> ความเร็วพัดลม (FAN)
+    </div>
+    <div class="grid2">
+      <div class="card locked" id="fan-card-8">
+        <div class="card-label"><i class="ti ti-wind" aria-hidden="true"></i>🌀 พัดลม (V8)</div>
+        <div class="fan-body">
+          <span class="fan-anim" id="fan8-icon" aria-hidden="true">💨</span>
+          <div class="fan-controls">
+            <div class="fan-cur-speed">ความเร็ว: <strong id="fan8-val">0</strong></div>
+            <div class="speed-btns">
+              <button class="spd-btn active" id="fan8-btn-0" onclick="setFan(8,0)">0 ปิด</button>
+              <button class="spd-btn" id="fan8-btn-1" onclick="setFan(8,1)">1 ต่ำ</button>
+              <button class="spd-btn" id="fan8-btn-2" onclick="setFan(8,2)">2 กลาง</button>
+              <button class="spd-btn" id="fan8-btn-3" onclick="setFan(8,3)">3 สูง</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card locked" id="fan-card-9">
+        <div class="card-label"><i class="ti ti-wind" aria-hidden="true"></i>🌀 พัดลม 2 (V9)</div>
+        <div class="fan-body">
+          <span class="fan-anim" id="fan9-icon" aria-hidden="true">💨</span>
+          <div class="fan-controls">
+            <div class="fan-cur-speed">ความเร็ว: <strong id="fan9-val">0</strong></div>
+            <div class="speed-btns">
+              <button class="spd-btn active" id="fan9-btn-0" onclick="setFan(9,0)">0 ปิด</button>
+              <button class="spd-btn" id="fan9-btn-1" onclick="setFan(9,1)">1 ต่ำ</button>
+              <button class="spd-btn" id="fan9-btn-2" onclick="setFan(9,2)">2 กลาง</button>
+              <button class="spd-btn" id="fan9-btn-3" onclick="setFan(9,3)">3 สูง</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──── TEMPERATURE SECTION ──── -->
+  <section aria-labelledby="temp-heading">
+    <div class="section-head" id="temp-heading">
+      <i class="ti ti-thermometer" aria-hidden="true"></i> ค่าอุณหภูมิ (Gauge)
+    </div>
+    <div class="card locked" id="temp-card-10">
+      <div class="card-label"><i class="ti ti-thermometer" aria-hidden="true"></i>🌡️ ค่าอุณหภูมิ (V10)</div>
+      <div class="temp-display" aria-live="polite">
+        <span class="temp-val" id="temp-val">--</span>
+        <span class="temp-unit">°C</span>
+      </div>
+      <div class="gauge-track">
+        <div class="gauge-fill" id="gauge-fill" style="width:0%"></div>
+      </div>
+      <div class="gauge-labels">
+        <span>0°C</span><span>15°C</span><span>30°C</span><span>45°C</span>
+      </div>
+      <div class="temp-set-label">ตั้งค่าอุณหภูมิ</div>
+      <div class="temp-set-row">
+        <div class="range-wrap">
+          <input type="range" id="tempSlider" min="0" max="45" step="1" value="25"
+                 oninput="onSliderMove(this.value)" aria-label="ตั้งค่าอุณหภูมิ">
+        </div>
+        <span class="slider-val" id="sliderVal">25°C</span>
+        <button class="send-btn" onclick="sendTemp()">ส่งค่า ↑</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ─── CONFIG ─── */
+  const TOKEN = 'PgrMYNhAYmkmpUD4cSV7dIeybiv7W3Yi';
+  const API   = 'https://blynk.cloud/external/api';
+
+  /* pin → index mapping for SW cards */
+  const SW_PINS = [
+    { pin: 'V0', id: 0 },
+    { pin: 'V1', id: 1 },
+    { pin: 'V2', id: 2 },
+    { pin: 'V7', id: 7 },
+  ];
+
+  /* SW state cache */
+  const swState = { V0: 0, V1: 0, V2: 0, V7: 0 };
+
+  /* ─── API helpers ─── */
+  async function blynkGet(pin) {
+    try {
+      const res = await fetch(`${API}/get?token=${TOKEN}&${pin}`);
+      if (!res.ok) return null;
+      const txt = await res.text();
+      const v = parseFloat(txt.trim());
+      return isNaN(v) ? null : v;
+    } catch { return null; }
+  }
+
+  async function blynkSet(pin, val) {
+    try {
+      const res = await fetch(`${API}/update?token=${TOKEN}&${pin}=${val}`);
+      return res.ok;
+    } catch { return false; }
+  }
+
+  /* ─── TOAST ─── */
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  }
+
+  /* ─── SW TOGGLE ─── */
+  function handleSW(pinId) {
+    const chk = document.getElementById(`sw-${pinId}`);
+    const val = chk.checked ? 1 : 0;
+    const pinMap = { 0:'V0', 1:'V1', 2:'V2', 7:'V7' };
+    const pin = pinMap[pinId];
+    swState[pin] = val;
+    renderSW(pinId, val);
+    blynkSet(pin, val)
+      .then(ok => showToast(ok ? `✅ บันทึกแล้ว` : '⚠️ ส่งคำสั่งไม่สำเร็จ'));
+    updateLocks();
+  }
+
+  function renderSW(pinId, val) {
+    const lbl = document.getElementById(`lbl-sw-${pinId}`);
+    const chk = document.getElementById(`sw-${pinId}`);
+    if (!lbl || !chk) return;
+    chk.checked = !!val;
+    lbl.textContent = val ? 'เปิด 🟢' : 'ปิด ⭕';
+  }
+
+  /* ─── LED DISPLAY ─── */
+  function renderLED(n, val) {
+    const orb = document.getElementById(`led${n}`);
+    const txt = document.getElementById(`led${n}-txt`);
+    if (!orb || !txt) return;
+    orb.className = 'led-orb';
+    if (val === 1) {
+      orb.classList.add('active-green');
+      txt.textContent = 'ทำงาน ✓';
+    } else {
+      orb.classList.add('active-red');
+      txt.textContent = 'หยุด ✗';
+    }
+  }
+
+  /* ─── FAN DISPLAY ─── */
+  function renderFan(v, val) {
+    const valEl = document.getElementById(`fan${v}-val`);
+    const icon  = document.getElementById(`fan${v}-icon`);
+    if (valEl) valEl.textContent = val;
+    if (icon) {
+      icon.className = 'fan-anim' + (val > 0 ? ` spin-${val}` : '');
+    }
+    for (let i = 0; i <= 3; i++) {
+      const b = document.getElementById(`fan${v}-btn-${i}`);
+      if (b) b.classList.toggle('active', i === val);
+    }
+  }
+
+  async function setFan(v, val) {
+    const swIdx = v === 8 ? 1 : 2; /* SW index: fan=V1(idx1), fan2=V2(idx2) */
+    const swKey = swIdx === 1 ? 'V1' : 'V2';
+    if (!swState[swKey]) {
+      showToast('⚠️ กรุณาเปิดสวิตช์ก่อน');
+      return;
+    }
+    renderFan(v, val);
+    const ok = await blynkSet(`V${v}`, val);
+    showToast(ok ? `🌀 ตั้งความเร็ว ${val} แล้ว` : '⚠️ ส่งคำสั่งไม่สำเร็จ');
+  }
+
+  /* ─── TEMPERATURE ─── */
+  function renderTemp(val) {
+    const v = Math.round(val);
+    document.getElementById('temp-val').textContent = isNaN(v) ? '--' : v;
+    if (!isNaN(v)) {
+      document.getElementById('gauge-fill').style.width = Math.round(v / 45 * 100) + '%';
+    }
+  }
+
+  function onSliderMove(val) {
+    document.getElementById('sliderVal').textContent = val + '°C';
+  }
+
+  async function sendTemp() {
+    if (!swState['V7']) { showToast('⚠️ กรุณาเปิดสวิตช์ไฟค่าอุณหภูมิก่อน'); return; }
+    const val = parseInt(document.getElementById('tempSlider').value);
+    renderTemp(val);
+    const ok = await blynkSet('V10', val);
+    showToast(ok ? `🌡️ ตั้งอุณหภูมิ ${val}°C แล้ว` : '⚠️ ส่งคำสั่งไม่สำเร็จ');
+  }
+
+  /* ─── LOCKS ─── */
+  function updateLocks() {
+    const fan8  = document.getElementById('fan-card-8');
+    const fan9  = document.getElementById('fan-card-9');
+    const temp  = document.getElementById('temp-card-10');
+    if (fan8) fan8.classList.toggle('locked', !swState['V1']);
+    if (fan9) fan9.classList.toggle('locked', !swState['V2']);
+    if (temp) temp.classList.toggle('locked', !swState['V7']);
+  }
+
+  /* ─── REFRESH ALL ─── */
+  async function refreshAll() {
+    const btn = document.getElementById('refreshBtn');
+    const dot = document.getElementById('dot');
+    btn.classList.add('spinning');
+    dot.style.background = '#facc15';
+    document.getElementById('statusText').textContent = 'กำลังอัปเดต...';
+
+    const reads = [
+      { pin: 'V0',  fn: v => { swState['V0'] = v; renderSW(0, v); } },
+      { pin: 'V1',  fn: v => { swState['V1'] = v; renderSW(1, v); } },
+      { pin: 'V2',  fn: v => { swState['V2'] = v; renderSW(2, v); } },
+      { pin: 'V7',  fn: v => { swState['V7'] = v; renderSW(7, v); } },
+      { pin: 'V3',  fn: v => renderLED(3, v) },
+      { pin: 'V4',  fn: v => renderLED(4, v) },
+      { pin: 'V5',  fn: v => renderLED(5, v) },
+      { pin: 'V6',  fn: v => renderLED(6, v) },
+      { pin: 'V8',  fn: v => renderFan(8, v) },
+      { pin: 'V9',  fn: v => renderFan(9, v) },
+      { pin: 'V10', fn: v => renderTemp(v) },
+    ];
+
+    await Promise.all(reads.map(async ({ pin, fn }) => {
+      const val = await blynkGet(pin);
+      if (val !== null) fn(Math.round(val));
+    }));
+
+    updateLocks();
+    btn.classList.remove('spinning');
+    dot.style.background = '#22c55e';
+    const now = new Date().toLocaleTimeString('th-TH');
+    document.getElementById('statusText').textContent = `อัปเดตล่าสุด ${now}`;
+  }
+
+  /* ─── INIT ─── */
+  refreshAll();
+</script>
+</body>
+</html>
